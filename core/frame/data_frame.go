@@ -55,6 +55,11 @@ func (d *DataFrame) GetMetaFrame() *MetaFrame {
 	return d.metaFrame
 }
 
+// SetMetadata set metadata
+func (d *DataFrame) SetMetadata(md []byte) {
+	d.metaFrame.SetMetadata(md)
+}
+
 // GetDataTag return the Tag of user's data
 func (d *DataFrame) GetDataTag() byte {
 	return d.payloadFrame.Tag

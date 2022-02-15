@@ -345,7 +345,8 @@ func (s *Server) handleDataFrame(c *Context) error {
 	// get stream function names from route
 	routes := route.GetForwardRoutes(from)
 	for _, to := range routes {
-		toIDs := s.connector.GetConnIDs(appID, to, f.GetDataTag())
+		// toIDs := s.connector.GetConnIDs(appID, to, f.GetDataTag())
+		toIDs := s.connector.GetConnIDs(appID, to, f)
 		for _, toID := range toIDs {
 			logger.Debugf("%shandleDataFrame tag=%#x tid=%s, counter=%d, from=[%s](%s), to=[%s](%s)", ServerLogPrefix, f.Tag(), f.TransactionID(), s.counterOfDataFrame, from, fromID, to, toID)
 

@@ -5,6 +5,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/yomorun/y3"
 	"github.com/yomorun/yomo/core/frame"
 	"github.com/yomorun/yomo/pkg/logger"
 )
@@ -34,7 +35,8 @@ type Connector interface {
 	// Get a connection by connection id.
 	Get(connID string) io.ReadWriteCloser
 	// GetConnIDs gets the connection ids by appID, name and tag.
-	GetConnIDs(appID string, name string, tags byte) []string
+	// GetConnIDs(appID string, name string, tags byte) []string
+	GetConnIDs(appID string, name string, dataFrame *frame.DataFrame) []string
 	// Write a DataFrame to a connection.
 	Write(f *frame.DataFrame, toID string) error
 	// GetSnapshot gets the snapshot of all connections.
@@ -122,8 +124,11 @@ func (c *connector) AppName(connID string) (string, bool) {
 }
 
 // GetConnIDs gets the connection ids by appID, name and tag.
-func (c *connector) GetConnIDs(appID string, name string, tag byte) []string {
+// func (c *connector) GetConnIDs(appID string, name string, tag byte) []string {
+func (c *connector) GetConnIDs(appID string, name string, dataFrame *frame.DataFrame) []string {
 	connIDs := make([]string, 0)
+
+	tag := dataFrame.GetDataTag()
 
 	c.apps.Range(func(key interface{}, val interface{}) bool {
 		app := val.(*app)
@@ -137,6 +142,53 @@ func (c *connector) GetConnIDs(appID string, name string, tag byte) []string {
 		}
 		return true
 	})
+
+	if len(connIDs) == 0 {
+		return connIDs
+	}
+	// decode metadata
+	meta := dataFrame.GetMetaFrame()
+	metadata := meta.Metadata()
+
+	packet := y3.NodePacket{}
+	_, err := y3.DecodeToNodePacket(metadata, &packet)
+	if err != nil {
+		logger.Errorf("%sdecode metadata err: %s", ServerLogPrefix, err)
+		return connIDs
+	}
+
+	var lbType, toInstanceID string
+
+	if lbTypePacket, ok := packet.PrimitivePackets[0x01]; ok {
+		val, err := lbTypePacket.ToUTF8String()
+		if err == nil {
+			lbType = val
+		}
+	}
+	if toInstanceIDPacket, ok := packet.PrimitivePackets[0x02]; ok {
+		val, err := toInstanceIDPacket.ToUTF8String()
+		if err == nil {
+			toInstanceID = val
+		}
+	}
+
+	switch lbType {
+	case "LoadBalanceBindInstance":
+		for _, id := range connIDs {
+			if id == toInstanceID {
+				return []string{id}
+			}
+		}
+		return make([]string, 0)
+	// case frame.LoadBalanceRandomPick:
+	// 	fallthrough
+	case "LoadBalanceBroadcast":
+	default:
+		// index := rand.Intn(len(connIDs))
+		// return connIDs[index : index+1]
+		return connIDs
+	}
+
 	return connIDs
 }
 

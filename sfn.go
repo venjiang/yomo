@@ -55,7 +55,8 @@ type streamFunction struct {
 	fn             core.AsyncHandler // user's function which will be invoked when data arrived
 	pfn            core.PipeHandler
 	pIn            chan []byte
-	pOut           chan *frame.PayloadFrame
+	// pOut           chan *frame.PayloadFrame
+	pOut chan *frame.DataFrame
 }
 
 // SetObserveDataTag set the data tag list that will be observed.
@@ -90,7 +91,8 @@ func (s *streamFunction) Connect() error {
 
 	if s.pfn != nil {
 		s.pIn = make(chan []byte)
-		s.pOut = make(chan *frame.PayloadFrame)
+		// s.pOut = make(chan *frame.PayloadFrame)
+		s.pOut = make(chan *frame.DataFrame)
 
 		// handle user's pipe function
 		go func() {
@@ -102,11 +104,12 @@ func (s *streamFunction) Connect() error {
 			for {
 				data := <-s.pOut
 				if data != nil {
-					logger.Debugf("%spipe fn send: tag=%#x, data=%# x", streamFunctionLogPrefix, data.Tag, data.Carriage)
-					frame := frame.NewDataFrame()
-					// todo: frame.SetTransactionID
-					frame.SetCarriage(data.Tag, data.Carriage)
-					s.client.WriteFrame(frame)
+					logger.Debugf("%spipe fn send: tag=%#x, data=%# x", streamFunctionLogPrefix, data.Tag, data.GetCarriage())
+					// frame := frame.NewDataFrame()
+					// // todo: frame.SetTransactionID
+					// frame.SetCarriage(data.Tag, data.GetCarriage())
+					// s.client.WriteFrame(frame)
+					s.client.WriteFrame(data)
 				}
 			}
 		}()

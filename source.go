@@ -24,6 +24,8 @@ type Source interface {
 	Write(p []byte) (n int, err error)
 	// WriteWithTag will write data with specified tag, default transactionID is epoch time.
 	WriteWithTag(tag uint8, data []byte) error
+	// WriteDataFrame will write data frame to zipper.
+	WriteDataFrame(f *frame.DataFrame) error
 }
 
 // YoMo-Source
@@ -88,4 +90,9 @@ func (s *yomoSource) WriteWithTag(tag uint8, data []byte) error {
 	frame := frame.NewDataFrame()
 	frame.SetCarriage(byte(tag), data)
 	return s.client.WriteFrame(frame)
+}
+
+// WriteDataFrame will write data frame to zipper.
+func (s *yomoSource) WriteDataFrame(f *frame.DataFrame) error {
+	return s.client.WriteFrame(f)
 }

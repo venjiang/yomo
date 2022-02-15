@@ -43,10 +43,10 @@ var (
 )
 
 func main() {
-	sfn := yomo.NewStreamFunction("Noise-3", yomo.WithZipperAddr("localhost:9000"))
+	sfn := yomo.NewStreamFunction("Noise-3", yomo.WithZipperAddr("localhost:9000"), yomo.WithObservedDataTags(0x14))
 	defer sfn.Close()
 
-	sfn.SetObserveDataTag(0x15)
+	// sfn.SetObserveDataTag(0x15)
 	sfn.SetHandler(handler)
 
 	err := sfn.Connect()

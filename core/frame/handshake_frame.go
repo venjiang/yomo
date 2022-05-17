@@ -72,8 +72,8 @@ func (h *HandshakeFrame) Encode() []byte {
 	authPayloadBlock.SetStringValue(h.authPayload)
 	// handshake frame
 	handshake := y3.NewNodePacketEncoder(byte(h.Type()))
-	handshake.AddPrimitivePacket(idBlock)
 	handshake.AddPrimitivePacket(nameBlock)
+	handshake.AddPrimitivePacket(idBlock)
 	handshake.AddPrimitivePacket(typeBlock)
 	handshake.AddPrimitivePacket(observeDataTagsBlock)
 	handshake.AddPrimitivePacket(authNameBlock)

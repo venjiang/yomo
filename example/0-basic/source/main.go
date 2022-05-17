@@ -30,6 +30,7 @@ func main() {
 		"yomo-source",
 		yomo.WithZipperAddr(addr),
 		yomo.WithLogger(logger),
+		yomo.WithObserveDataTags(0x34, 0x0),
 	)
 	err := source.Connect()
 	if err != nil {
@@ -44,6 +45,10 @@ func main() {
 	source.SetErrorHandler(func(err error) {
 		logger.Printf("[source] receive server error: %v", err)
 		os.Exit(1)
+	})
+	// set receive handler for the observe datatags
+	source.SetReceiveHandler(func(tag byte, data []byte) {
+		logger.Printf("[source] ♻️  receive backflow: tag=%#v, data=%v", tag, string(data))
 	})
 
 	// generate mock data and send it to YoMo-Zipper in every 100 ms.
@@ -70,13 +75,7 @@ func generateAndSendData(stream yomo.Source) error {
 
 		// send data via QUIC stream.
 		_, err = stream.Write(sendingBuf)
-		if i++; i > 6 {
-			stream.Close()
-			return nil
-			// logger.Printf("[source] send GoawayFrame")
-			// goawayFrame := frame.NewGoawayFrame("客户端发送Goaway")
-			// stream.WriteFrame(goawayFrame)
-		}
+		i++
 		if err != nil {
 			logger.Errorf("[source] ❌ Emit %v to YoMo-Zipper failure with err: %v", data, err)
 			time.Sleep(500 * time.Millisecond)
@@ -85,6 +84,13 @@ func generateAndSendData(stream yomo.Source) error {
 		} else {
 			logger.Printf("[source] ✅ Emit %v to YoMo-Zipper", data)
 		}
+		// if i > 6 {
+		// 	stream.Close()
+		// 	return nil
+		// 	// logger.Printf("[source] send GoawayFrame")
+		// 	// goawayFrame := frame.NewGoawayFrame("客户端发送Goaway")
+		// 	// stream.WriteFrame(goawayFrame)
+		// }
 
 		time.Sleep(500 * time.Millisecond)
 	}

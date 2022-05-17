@@ -11,13 +11,15 @@ import (
 )
 
 type app struct {
+	id       string // client id
 	name     string // app name
 	observed []byte // data tags
+	sourceID string // source id
 }
 
-// func (a *app) ID() string {
-// 	return a.id
-// }
+func (a *app) ID() string {
+	return a.id
+}
 
 func (a *app) Name() string {
 	return a.name
@@ -27,19 +29,20 @@ var _ Connector = &connector{}
 
 // Connector is a interface to manage the connections and applications.
 type Connector interface {
-	// Add a connection.
+	// Add a connection. stream is quic.Stream
 	Add(connID string, stream io.ReadWriteCloser)
 	// Remove a connection.
 	Remove(connID string)
 	// Get a connection by connection id.
 	Get(connID string) io.ReadWriteCloser
 	// GetConnIDs gets the connection ids by name and tag.
-	GetConnIDs(name string, tags byte) []string
+	GetConnIDs(name string, tag byte) []string
+	// GetSourceConnIDs gets the connection ids by source observe tag.
+	GetSourceConnIDs(sourceID string, tag byte) []string
 	// Write a Frame to a connection.
 	Write(f frame.Frame, toID string) error
 	// GetSnapshot gets the snapshot of all connections.
 	GetSnapshot() map[string]io.ReadWriteCloser
-
 	// App gets the app by connID.
 	App(connID string) (*app, bool)
 	// AppID gets the ID of app by connID.
@@ -47,7 +50,9 @@ type Connector interface {
 	// AppName gets the name of app by connID.
 	AppName(connID string) (string, bool)
 	// LinkApp links the app and connection.
-	LinkApp(connID string, name string, observed []byte)
+	LinkApp(connID string, id string, name string, observed []byte)
+	// LinkSource links the source and connection.
+	LinkSource(connID string, id string, name string, sourceID string, observed []byte)
 	// UnlinkApp removes the app by connID.
 	UnlinkApp(connID string, name string)
 	// ExistsApp check app exists
@@ -58,16 +63,18 @@ type Connector interface {
 }
 
 type connector struct {
-	conns sync.Map
-	apps  sync.Map
-	mu    sync.Mutex
+	conns   sync.Map
+	apps    sync.Map
+	sources sync.Map
+	mu      sync.Mutex
 }
 
 func newConnector() Connector {
 	return &connector{
-		conns: sync.Map{},
-		apps:  sync.Map{},
-		mu:    sync.Mutex{},
+		conns:   sync.Map{},
+		apps:    sync.Map{},
+		sources: sync.Map{},
+		mu:      sync.Mutex{},
 	}
 }
 
@@ -83,6 +90,7 @@ func (c *connector) Remove(connID string) {
 	c.conns.Delete(connID)
 	// c.funcs.Delete(connID)
 	c.apps.Delete(connID)
+	c.sources.Delete(connID)
 }
 
 // Get a connection by connection id.
@@ -142,7 +150,25 @@ func (c *connector) GetConnIDs(name string, tag byte) []string {
 	return connIDs
 }
 
-// Write a DataFrame to a connection.
+// GetSourceConnIDs gets the source connection ids by tag.
+func (c *connector) GetSourceConnIDs(sourceID string, tag byte) []string {
+	connIDs := make([]string, 0)
+
+	c.sources.Range(func(key interface{}, val interface{}) bool {
+		app := val.(*app)
+		for _, v := range app.observed {
+			if v == tag && app.sourceID == sourceID {
+				connIDs = append(connIDs, key.(string))
+				// break
+			}
+		}
+		return true
+	})
+
+	return connIDs
+}
+
+// Write a Frame to a connection.
 func (c *connector) Write(f frame.Frame, toID string) error {
 	targetStream := c.Get(toID)
 	if targetStream == nil {
@@ -166,9 +192,15 @@ func (c *connector) GetSnapshot() map[string]io.ReadWriteCloser {
 }
 
 // LinkApp links the app and connection.
-func (c *connector) LinkApp(connID string, name string, observed []byte) {
+func (c *connector) LinkApp(connID string, id string, name string, observed []byte) {
 	logger.Debugf("%sconnector link application: connID[%s] --> app[%s]", ServerLogPrefix, connID, name)
-	c.apps.Store(connID, &app{name, observed})
+	c.apps.Store(connID, &app{id, name, observed, ""})
+}
+
+// LinkSource links the source and connection.
+func (c *connector) LinkSource(connID string, id string, name string, sourceID string, observed []byte) {
+	logger.Debugf("%sconnector link source: connID[%s] --> source[%s]", ServerLogPrefix, connID, name)
+	c.sources.Store(connID, &app{id, name, observed, sourceID})
 }
 
 // UnlinkApp removes the app by connID.

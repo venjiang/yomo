@@ -11,14 +11,15 @@ import (
 )
 
 type app struct {
+	id       string // client id
 	name     string // app name
 	observed []byte // data tags
 	sourceID string // source id
 }
 
-// func (a *app) ID() string {
-// 	return a.id
-// }
+func (a *app) ID() string {
+	return a.id
+}
 
 func (a *app) Name() string {
 	return a.name
@@ -49,9 +50,9 @@ type Connector interface {
 	// AppName gets the name of app by connID.
 	AppName(connID string) (string, bool)
 	// LinkApp links the app and connection.
-	LinkApp(connID string, name string, observed []byte)
+	LinkApp(connID string, id string, name string, observed []byte)
 	// LinkSource links the source and connection.
-	LinkSource(connID string, name string, sourceID string, observed []byte)
+	LinkSource(connID string, id string, name string, sourceID string, observed []byte)
 	// UnlinkApp removes the app by connID.
 	UnlinkApp(connID string, name string)
 	// ExistsApp check app exists
@@ -191,15 +192,15 @@ func (c *connector) GetSnapshot() map[string]io.ReadWriteCloser {
 }
 
 // LinkApp links the app and connection.
-func (c *connector) LinkApp(connID string, name string, observed []byte) {
+func (c *connector) LinkApp(connID string, id string, name string, observed []byte) {
 	logger.Debugf("%sconnector link application: connID[%s] --> app[%s]", ServerLogPrefix, connID, name)
-	c.apps.Store(connID, &app{name, observed, ""})
+	c.apps.Store(connID, &app{id, name, observed, ""})
 }
 
 // LinkSource links the source and connection.
-func (c *connector) LinkSource(connID string, name string, sourceID string, observed []byte) {
+func (c *connector) LinkSource(connID string, id string, name string, sourceID string, observed []byte) {
 	logger.Debugf("%sconnector link source: connID[%s] --> source[%s]", ServerLogPrefix, connID, name)
-	c.sources.Store(connID, &app{name, observed, sourceID})
+	c.sources.Store(connID, &app{id, name, observed, sourceID})
 }
 
 // UnlinkApp removes the app by connID.

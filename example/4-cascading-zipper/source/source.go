@@ -44,7 +44,7 @@ func main() {
 
 func generateAndSendData(stream yomo.Source) error {
 	i := 0
-	for i < 3 {
+	for i < 2 {
 		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 		data := []byte(fmt.Sprintf("%d", rnd.Uint32()))
 		// send data via QUIC stream.

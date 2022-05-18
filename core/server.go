@@ -256,12 +256,29 @@ func (s *Server) mainFrameHandler(c *Context) error {
 		}
 
 	case frame.TagOfDataFrame:
+		df := c.Frame.(*frame.DataFrame)
+		tid := df.TransactionID()
+		logger.Printf("%sGOT 🔰 DataFrame: tag=%#x, tid=%s, carriage=%s",
+			ServerLogPrefix, df.GetDataTag(), tid, df.GetCarriage())
 		if err := s.handleDataFrame(c); err != nil {
 			c.CloseWithError(yerr.ErrorCodeData, fmt.Sprintf("handleDataFrame err: %v", err))
 		} else {
+			// 如果是源始数据流，进行分发
+			if len(tid) > 4 {
+				logger.Printf("%s源始数据分发 DataFrame: tag=%#x, tid=%s, carriage=%s",
+					ServerLogPrefix, df.GetDataTag(), tid, df.GetCarriage())
+				s.dispatchToDownstreams(df)
+			} else {
+				// 如果是下游sfn处理过回流
+				if tid == "sfn" {
+					logger.Printf("%s下游数据回流 DataFrame: tag=%#x, tid=%s, carriage=%s",
+						ServerLogPrefix, df.GetDataTag(), df.TransactionID(), df.GetCarriage())
+					s.dispatchToDownstreams(df)
+				}
+			}
+
 			// observe datatags backflow
 			s.handleBackflowFrame(c)
-			s.dispatchToDownstreams(c.Frame.(*frame.DataFrame))
 		}
 	default:
 		logger.Errorf("%serr=%v, frame=%v", ServerLogPrefix, err, c.Frame.Encode())
@@ -425,6 +442,8 @@ func (s *Server) handleBackflowFrame(c *Context) error {
 	tag := f.GetDataTag()
 	carriage := f.GetCarriage()
 	sourceID := f.SourceID()
+	// TODO: test
+	logger.Debugf("%s♻️  handleBackflowFrame tag:%#v --> source:[%s], result=%# x", ServerLogPrefix, tag, sourceID, string(carriage))
 	// write to source with BackflowFrame
 	bf := frame.NewBackflowFrame(tag, carriage)
 	sourceConnIDs := s.connector.GetSourceConnIDs(sourceID, tag)
@@ -493,7 +512,10 @@ func (s *Server) AddDownstreamServer(addr string, c *Client) {
 func (s *Server) dispatchToDownstreams(df *frame.DataFrame) {
 	for addr, ds := range s.downstreams {
 		logger.Debugf("%sdispatching to [%s]: %# x", ServerLogPrefix, addr, df.Tag())
-		ds.WriteFrame(df)
+		newdf := df
+		newdf.SetTransactionID("disp")
+		// ds.WriteFrame(df)
+		ds.WriteFrame(newdf)
 	}
 }
 

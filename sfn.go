@@ -27,7 +27,7 @@ type StreamFunction interface {
 	// Close will close the connection
 	Close() error
 	// Send a data to zipper.
-	Write(tag byte, carriage []byte) error
+	// Write(tag byte, carriage []byte) error
 }
 
 // NewStreamFunction create a stream function.
@@ -156,10 +156,12 @@ func (s *streamFunction) onDataFrame(data []byte, metaFrame *frame.MetaFrame) {
 				// TODO: seems we should implement a DeepCopy() of MetaFrame in the future
 				frame := frame.NewDataFrame()
 				// reuse transactionID
-				frame.SetTransactionID(metaFrame.TransactionID())
+				// frame.SetTransactionID(metaFrame.TransactionID())
+				frame.SetTransactionID("sfn")
 				// reuse sourceID
 				frame.SetSourceID(metaFrame.SourceID())
 				frame.SetCarriage(tag, resp)
+				s.client.Logger().Printf("%sSFN回写Zipper: tag=%#x, data=%s", streamFunctionLogPrefix, tag, resp)
 				s.client.WriteFrame(frame)
 			}
 		}()
@@ -172,11 +174,13 @@ func (s *streamFunction) onDataFrame(data []byte, metaFrame *frame.MetaFrame) {
 }
 
 // Send a DataFrame to zipper.
-func (s *streamFunction) Write(tag byte, carriage []byte) error {
-	frame := frame.NewDataFrame()
-	frame.SetCarriage(tag, carriage)
-	return s.client.WriteFrame(frame)
-}
+// func (s *streamFunction) Write(tag byte, carriage []byte) error {
+// 	frame := frame.NewDataFrame()
+// 	frame.SetCarriage(tag, carriage)
+// 	frame.SetTransactionID("sfn")
+// 	s.client.Logger().Printf("sfn处理数据: tag=%#v, carriage=%s", tag, carriage)
+// 	return s.client.WriteFrame(frame)
+// }
 
 // SetErrorHandler set the error handler function when server error occurs
 func (s *streamFunction) SetErrorHandler(fn func(err error)) {

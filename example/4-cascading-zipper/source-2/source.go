@@ -17,7 +17,7 @@ func main() {
 		"yomo-source",
 		yomo.WithZipperAddr("localhost:9002"),
 		yomo.WithCredential("token:z2"),
-		// yomo.WithObserveDataTags(0x34),
+		yomo.WithObserveDataTags(0x34),
 	)
 	err := source.Connect()
 	if err != nil {
@@ -44,7 +44,7 @@ func main() {
 
 func generateAndSendData(stream yomo.Source) error {
 	i := 0
-	for i < 3 {
+	for i < 1 {
 		rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 		data := []byte(fmt.Sprintf("%d", rnd.Uint32()))
 		// send data via QUIC stream.

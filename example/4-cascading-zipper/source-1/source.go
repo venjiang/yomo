@@ -58,7 +58,7 @@ func generateAndSendData(stream yomo.Source) error {
 		i++
 
 		log.Printf("[source] ✅ Emit %s to YoMo-Zipper", data)
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
 	return nil
 }

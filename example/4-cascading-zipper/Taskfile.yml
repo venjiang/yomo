@@ -21,21 +21,41 @@ tasks:
     cmds:
       - "go run zipper_2.go"
 
-  sfn:
-    desc: sfn
-    deps: [sfn-build]
+  zipper-3:
+    desc: run zipper-3
+    dir: zipper-3
     cmds:
-      - "./bin/sfn{{exeExt}}"
+      - "go run zipper_3.go"
 
-  source:
-    desc: source
-    deps: [source-build]
+  sfn-1:
+    desc: sfn-1
+    deps: [sfn-1-build]
     cmds:
-      - "./bin/source{{exeExt}}"
+      - "./bin/sfn-1{{exeExt}}"
+
+  sfn-2:
+    desc: sfn-2
+    deps: [sfn-2-build]
+    cmds:
+      - "./bin/sfn-2{{exeExt}}"
+
+  sfn-3:
+    desc: sfn-3
+    deps: [sfn-3-build]
+    cmds:
+      - "./bin/sfn-3{{exeExt}}"
+
+  source-1:
+    desc: source-1
+    # deps: [source-1-build]
+    dir: source-1
+    cmds:
+      # - "./bin/source{{exeExt}}"
+      - "go run source.go"
 
   source-2:
-    desc: source
-    # deps: [source-build]
+    desc: source-2
+    # deps: [source-2-build]
     dir: source-2
     cmds:
       - "go run source.go"
@@ -50,7 +70,17 @@ tasks:
     cmds:
       - "go build -o ./bin/source{{exeExt}} source/source.go"
 
-  sfn-build:
-    desc: build sfn
+  sfn-1-build:
+    desc: build sfn-1
     cmds:
-      - "go build -o ./bin/sfn{{exeExt}} sfn/sfn_echo.go"
+      - "go build -o ./bin/sfn-1{{exeExt}} sfn-1/sfn_echo.go"
+
+  sfn-2-build:
+    desc: build sfn-2
+    cmds:
+      - "go build -o ./bin/sfn-2{{exeExt}} sfn-2/sfn_echo.go"
+
+  sfn-3-build:
+    desc: build sfn-3
+    cmds:
+      - "go build -o ./bin/sfn-3{{exeExt}} sfn-3/sfn_echo.go"

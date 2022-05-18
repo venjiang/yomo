@@ -23,6 +23,10 @@ func main() {
 		yomo.WithZipperAddr("localhost:9001"),
 		yomo.WithCredential("token:z1"),
 	))
+	zipper.AddDownstreamZipper(yomo.NewDownstreamZipper(
+		"zipper-3",
+		yomo.WithZipperAddr("localhost:9003"),
+	))
 	// start zipper service
 	log.Printf("Server has started!, pid: %d", os.Getpid())
 	go func() {

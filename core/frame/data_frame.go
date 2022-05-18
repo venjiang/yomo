@@ -65,6 +65,16 @@ func (d *DataFrame) SetSourceID(sourceID string) {
 	d.metaFrame.SetSourceID(sourceID)
 }
 
+// SetState set the frame state
+func (d *DataFrame) SetState(state State) {
+	d.metaFrame.SetState(state)
+}
+
+// State returns the frame state
+func (d *DataFrame) State() State {
+	return d.metaFrame.State()
+}
+
 // SourceID returns source ID
 func (d *DataFrame) SourceID() string {
 	return d.metaFrame.SourceID()

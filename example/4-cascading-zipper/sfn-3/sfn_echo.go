@@ -1,0 +1,36 @@
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/yomorun/yomo"
+)
+
+func main() {
+	sfn := yomo.NewStreamFunction(
+		"echo-sfn",
+		yomo.WithZipperAddr("localhost:9003"),
+		yomo.WithObserveDataTags(0x33),
+	)
+	defer sfn.Close()
+
+	// set handler
+	sfn.SetHandler(handler)
+
+	// start
+	err := sfn.Connect()
+	if err != nil {
+		log.Fatalf("[sfn] connect err=%v", err)
+		os.Exit(1)
+	}
+
+	select {}
+}
+
+func handler(data []byte) (byte, []byte) {
+	val := string(data)
+	log.Printf(">> [sfn] got tag=0x33, data=%s", val)
+	val="🍎" + val
+	return 0x34, []byte(val)
+}

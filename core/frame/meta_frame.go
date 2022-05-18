@@ -7,11 +7,37 @@ import (
 	"github.com/yomorun/y3"
 )
 
+// State frame state
+type State byte
+
+const (
+	// Normal data frame is normal(defaults)
+	Normal State = 0x0
+	// Dispatched data frame is dispatched
+	Dispatched State = 0x1
+	// Processed data frame is processed(with sfn)
+	Processed State = 0x2
+)
+
+func (s State) String() string{
+	switch s {
+	case Dispatched:
+		return "Dispatched"
+	case Processed:
+		return "Processed"
+	case Normal:
+		return "Normal"
+	default:
+		return "Unknown"
+	}
+}
+
 // MetaFrame is a Y3 encoded bytes, SeqID is a fixed value of TYPE_ID_TRANSACTION.
 // used for describes metadata for a DataFrame.
 type MetaFrame struct {
 	tid      string
 	sourceID string
+	state    State // data process state
 }
 
 // NewMetaFrame creates a new MetaFrame instance.
@@ -41,6 +67,16 @@ func (m *MetaFrame) SourceID() string {
 	return m.sourceID
 }
 
+// SetState set the frame state
+func (m *MetaFrame) SetState(state State) {
+	m.state = state
+}
+
+// State returns the frame state
+func (m *MetaFrame) State() State {
+	return m.state
+}
+
 // Encode implements Frame.Encode method.
 func (m *MetaFrame) Encode() []byte {
 	meta := y3.NewNodePacketEncoder(byte(TagOfMetaFrame))
@@ -52,6 +88,10 @@ func (m *MetaFrame) Encode() []byte {
 	sourceID := y3.NewPrimitivePacketEncoder(byte(TagOfSourceID))
 	sourceID.SetStringValue(m.sourceID)
 	meta.AddPrimitivePacket(sourceID)
+	// state
+	state := y3.NewPrimitivePacketEncoder(byte(TagOfState))
+	state.SetBytesValue([]byte{byte(m.state)})
+	meta.AddPrimitivePacket(state)
 
 	return meta.Encode()
 }
@@ -85,6 +125,12 @@ func DecodeToMetaFrame(buf []byte) (*MetaFrame, error) {
 			return nil, err
 		}
 		meta.sourceID = sourceID
+	}
+	// state
+	if stateBlock, ok := node.PrimitivePackets[byte(TagOfState)]; ok {
+		if state := stateBlock.ToBytes(); len(state) > 0 {
+			meta.state = State(state[0])
+		}
 	}
 
 	return meta, nil

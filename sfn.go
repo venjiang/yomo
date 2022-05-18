@@ -154,15 +154,16 @@ func (s *streamFunction) onDataFrame(data []byte, metaFrame *frame.MetaFrame) {
 				s.client.Logger().Debugf("%sstart WriteFrame(): tag=%#x, data[%d]=%# x", streamFunctionLogPrefix, tag, len(resp), frame.Shortly(resp))
 				// build a DataFrame
 				// TODO: seems we should implement a DeepCopy() of MetaFrame in the future
-				frame := frame.NewDataFrame()
+				df := frame.NewDataFrame()
 				// reuse transactionID
 				// frame.SetTransactionID(metaFrame.TransactionID())
-				frame.SetTransactionID("sfn")
+				// frame.SetTransactionID("sfn")
+				df.SetState(frame.Processed)
 				// reuse sourceID
-				frame.SetSourceID(metaFrame.SourceID())
-				frame.SetCarriage(tag, resp)
-				s.client.Logger().Printf("%sSFN回写Zipper: tag=%#x, data=%s", streamFunctionLogPrefix, tag, resp)
-				s.client.WriteFrame(frame)
+				df.SetSourceID(metaFrame.SourceID())
+				df.SetCarriage(tag, resp)
+				s.client.Logger().Printf("%sSFN回写Zipper: tag=%#x, state=%s, data=%s", streamFunctionLogPrefix, tag, df.State(), resp)
+				s.client.WriteFrame(df)
 			}
 		}()
 	} else if s.pfn != nil {

@@ -258,21 +258,25 @@ func (s *Server) mainFrameHandler(c *Context) error {
 	case frame.TagOfDataFrame:
 		df := c.Frame.(*frame.DataFrame)
 		tid := df.TransactionID()
-		logger.Printf("%sGOT 🔰 DataFrame: tag=%#x, tid=%s, carriage=%s",
-			ServerLogPrefix, df.GetDataTag(), tid, df.GetCarriage())
+		state := df.State()
+		logger.Printf("%sGOT 🔰 DataFrame: tag=%#x, state=%s, tid=%s, carriage=%s",
+			ServerLogPrefix, df.GetDataTag(), state, tid, df.GetCarriage())
 		if err := s.handleDataFrame(c); err != nil {
 			c.CloseWithError(yerr.ErrorCodeData, fmt.Sprintf("handleDataFrame err: %v", err))
 		} else {
 			// 如果是源始数据流，进行分发
-			if len(tid) > 4 {
-				logger.Printf("%s源始数据分发 DataFrame: tag=%#x, tid=%s, carriage=%s",
-					ServerLogPrefix, df.GetDataTag(), tid, df.GetCarriage())
+			// if len(tid) > 4 {
+			if state == frame.Normal {
+				logger.Printf("%s源始数据分发 DataFrame: tag=%#x, state=%s, tid=%s, carriage=%s",
+					ServerLogPrefix, df.GetDataTag(), state, tid, df.GetCarriage())
 				s.dispatchToDownstreams(df)
 			} else {
+				// 如果是disp不分发
 				// 如果是下游sfn处理过回流
-				if tid == "sfn" {
-					logger.Printf("%s下游数据回流 DataFrame: tag=%#x, tid=%s, carriage=%s",
-						ServerLogPrefix, df.GetDataTag(), df.TransactionID(), df.GetCarriage())
+				// if tid == "sfn" {
+				if state == frame.Processed {
+					logger.Printf("%s下游数据回流 DataFrame: tag=%#x, state=%s, tid=%s, carriage=%s",
+						ServerLogPrefix, df.GetDataTag(), state, df.TransactionID(), df.GetCarriage())
 					s.dispatchToDownstreams(df)
 				}
 			}
@@ -512,10 +516,12 @@ func (s *Server) AddDownstreamServer(addr string, c *Client) {
 func (s *Server) dispatchToDownstreams(df *frame.DataFrame) {
 	for addr, ds := range s.downstreams {
 		logger.Debugf("%sdispatching to [%s]: %# x", ServerLogPrefix, addr, df.Tag())
-		newdf := df
-		newdf.SetTransactionID("disp")
-		// ds.WriteFrame(df)
-		ds.WriteFrame(newdf)
+		// newdf := df
+		// newdf.SetTransactionID("disp")
+		// newdf.SetState(frame.Dispatched)
+		df.SetState(frame.Dispatched)
+		ds.WriteFrame(df)
+		// ds.WriteFrame(newdf)
 	}
 }
 

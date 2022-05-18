@@ -33,6 +33,13 @@ tasks:
     cmds:
       - "./bin/source{{exeExt}}"
 
+  source-2:
+    desc: source
+    # deps: [source-build]
+    dir: source-2
+    cmds:
+      - "go run source.go"
+
   clean:
     desc: clean
     cmds:

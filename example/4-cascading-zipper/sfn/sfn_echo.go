@@ -32,5 +32,5 @@ func main() {
 func handler(data []byte) (byte, []byte) {
 	val := string(data)
 	log.Printf(">> [sfn] got tag=0x33, data=%s", val)
-	return 0x0, nil
+	return 0x34, data
 }

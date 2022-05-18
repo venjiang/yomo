@@ -17,6 +17,12 @@ func main() {
 
 	zipper.ConfigWorkflow("zipper_2_wf.yaml")
 
+	// add Downstream Zipper
+	zipper.AddDownstreamZipper(yomo.NewDownstreamZipper(
+		"zipper-1",
+		yomo.WithZipperAddr("localhost:9001"),
+		yomo.WithCredential("token:z1"),
+	))
 	// start zipper service
 	log.Printf("Server has started!, pid: %d", os.Getpid())
 	go func() {
